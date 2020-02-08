@@ -16,7 +16,6 @@ package users
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/drone/drone/core"
 	"github.com/drone/drone/handler/api/render"
@@ -25,29 +24,31 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleFind returns an http.HandlerFunc that writes json-encoded
-// user account information to the the response body.
-func HandleFind(users core.UserStore) http.HandlerFunc {
+// HandleRepoList returns an http.HandlerFunc that writes a json-encoded
+// list of all user repositories to the response body.
+func HandleRepoList(users core.UserStore, repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		login := chi.URLParam(r, "user")
 
 		user, err := users.FindLogin(r.Context(), login)
 		if err != nil {
-			// the client can make a user request by providing
-			// the user id as opposed to the username. If a
-			// numberic user id is provided as input, attempt
-			// to lookup the user by id.
-			if id, _ := strconv.ParseInt(login, 10, 64); id != 0 {
-				user, err = users.Find(r.Context(), id)
-				if err == nil {
-					render.JSON(w, user, 200)
-					return
-				}
-			}
 			render.NotFound(w, err)
-			logger.FromRequest(r).Debugln("api: cannot find user")
+			logger.FromRequest(r).
+				WithError(err).
+				WithField("user", login).
+				Debugln("api: cannot find user")
+			return
+		}
+
+		repos, err := repos.List(r.Context(), user.ID)
+		if err != nil {
+			render.InternalError(w, err)
+			logger.FromRequest(r).
+				WithError(err).
+				WithField("user", login).
+				Warnln("api: cannot list user repositories")
 		} else {
-			render.JSON(w, user, 200)
+			render.JSON(w, repos, 200)
 		}
 	}
 }
