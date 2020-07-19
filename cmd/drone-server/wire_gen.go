@@ -18,6 +18,7 @@ import (
 	"github.com/drone/drone/service/license"
 	"github.com/drone/drone/service/linker"
 	"github.com/drone/drone/service/token"
+	"github.com/drone/drone/service/transfer"
 	"github.com/drone/drone/service/user"
 	"github.com/drone/drone/store/cron"
 	"github.com/drone/drone/store/perm"
@@ -63,6 +64,7 @@ func InitializeApplication(config2 config.Config) (application, error) {
 	validateService := provideValidatePlugin(config2)
 	triggerer := trigger.New(coreCanceler, configService, convertService, commitService, statusService, buildStore, scheduler, repositoryStore, userStore, validateService, webhookSender)
 	cronScheduler := cron2.New(commitService, cronStore, repositoryStore, userStore, triggerer)
+	reaper := provideReaper(repositoryStore, buildStore, stageStore, coreCanceler, config2)
 	coreLicense := provideLicense(client, config2)
 	datadog := provideDatadog(userStore, repositoryStore, buildStore, system, coreLicense, config2)
 	logStore := provideLogStore(db, config2)
@@ -89,8 +91,9 @@ func InitializeApplication(config2 config.Config) (application, error) {
 	}
 	batcher := provideBatchStore(db, config2)
 	syncer := provideSyncer(repositoryService, repositoryStore, userStore, batcher, config2)
+	transferer := transfer.New(repositoryStore, permStore)
 	userService := user.New(client, renewer)
-	server := api.New(buildStore, commitService, cronStore, corePubsub, globalSecretStore, hookService, logStore, coreLicense, licenseService, organizationService, permStore, repositoryStore, repositoryService, scheduler, secretStore, stageStore, stepStore, statusService, session, logStream, syncer, system, triggerer, userStore, userService, webhookSender)
+	server := api.New(buildStore, commitService, cronStore, corePubsub, globalSecretStore, hookService, logStore, coreLicense, licenseService, organizationService, permStore, repositoryStore, repositoryService, scheduler, secretStore, stageStore, stepStore, statusService, session, logStream, syncer, system, transferer, triggerer, userStore, userService, webhookSender)
 	admissionService := provideAdmissionPlugin(client, organizationService, userService, config2)
 	hookParser := parser.New(client)
 	coreLinker := linker.New(client)
@@ -104,6 +107,6 @@ func InitializeApplication(config2 config.Config) (application, error) {
 	mainPprofHandler := providePprof(config2)
 	mux := provideRouter(server, webServer, mainRpcHandlerV1, mainRpcHandlerV2, mainHealthzHandler, metricServer, mainPprofHandler)
 	serverServer := provideServer(mux, config2)
-	mainApplication := newApplication(cronScheduler, datadog, runner, serverServer, userStore)
+	mainApplication := newApplication(cronScheduler, reaper, datadog, runner, serverServer, userStore)
 	return mainApplication, nil
 }

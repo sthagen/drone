@@ -23,6 +23,7 @@ import (
 	"github.com/drone/drone/metric/sink"
 	"github.com/drone/drone/pubsub"
 	"github.com/drone/drone/service/canceler"
+	"github.com/drone/drone/service/canceler/reaper"
 	"github.com/drone/drone/service/commit"
 	contents "github.com/drone/drone/service/content"
 	"github.com/drone/drone/service/content/cache"
@@ -35,6 +36,7 @@ import (
 	"github.com/drone/drone/service/status"
 	"github.com/drone/drone/service/syncer"
 	"github.com/drone/drone/service/token"
+	"github.com/drone/drone/service/transfer"
 	"github.com/drone/drone/service/user"
 	"github.com/drone/drone/session"
 	"github.com/drone/drone/trigger"
@@ -55,6 +57,7 @@ var serviceSet = wire.NewSet(
 	parser.New,
 	pubsub.New,
 	token.Renewer,
+	transfer.New,
 	trigger.New,
 	user.New,
 
@@ -64,6 +67,7 @@ var serviceSet = wire.NewSet(
 	provideHookService,
 	provideNetrcService,
 	provideOrgService,
+	provideReaper,
 	provideSession,
 	provideStatusService,
 	provideSyncer,
@@ -168,6 +172,25 @@ func provideSystem(config config.Config) *core.System {
 		Link:    config.Server.Addr,
 		Version: version.Version.String(),
 	}
+}
+
+// provideReaper is a Wire provider function that returns the
+// zombie build reaper.
+func provideReaper(
+	repos core.RepositoryStore,
+	builds core.BuildStore,
+	stages core.StageStore,
+	canceler core.Canceler,
+	config config.Config,
+) *reaper.Reaper {
+	return reaper.New(
+		repos,
+		builds,
+		stages,
+		canceler,
+		config.Cleanup.Running,
+		config.Cleanup.Pending,
+	)
 }
 
 // provideDatadog is a Wire provider function that returns the
