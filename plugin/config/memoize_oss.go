@@ -12,7 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !nolimit
-// +build !oss
+// +build oss
 
-package license
+package config
+
+import (
+	"github.com/drone/drone/core"
+)
+
+// Memoize caches the conversion results for subsequent calls.
+// This micro-optimization is intended for multi-pipeline
+// projects that would otherwise covert the file for each
+// pipeline execution.
+func Memoize(base core.ConfigService) core.ConfigService {
+	return new(noop)
+}

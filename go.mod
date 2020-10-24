@@ -13,7 +13,7 @@ require (
 	github.com/dchest/authcookie v0.0.0-20120917135355-fbdef6e99866
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/drone/drone-go v1.0.6
+	github.com/drone/drone-go v1.3.2-0.20200826185551-24929e4d2cfc
 	github.com/drone/drone-runtime v1.1.1-0.20200623162453-61e33e2cab5d
 	github.com/drone/drone-ui v0.0.0-20200701170131-2b91a041998b
 	github.com/drone/drone-yaml v1.2.4-0.20200326192514-6f4d6dfb39e4
@@ -29,7 +29,7 @@ require (
 	github.com/go-sql-driver/mysql v1.4.0
 	github.com/golang/mock v1.3.1
 	github.com/google/go-cmp v0.4.0
-	github.com/google/go-jsonnet v0.12.1
+	github.com/google/go-jsonnet v0.16.0
 	github.com/google/wire v0.2.1
 	github.com/gorhill/cronexpr v0.0.0-20140423231348-a557574d6c02 // indirect
 	github.com/gosimple/slug v1.3.0

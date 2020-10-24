@@ -13,14 +13,11 @@
 // limitations under the License.
 
 // +build !nolimit
+// +build !oss
 
 package license
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
 	"strings"
 
 	"github.com/drone/drone/core"
@@ -75,42 +72,10 @@ func Load(path string) (*core.License, error) {
 		return nil, err
 	}
 
-	if decoded.Expired() {
-		// if the license is expired we should check the license
-		// server to see if the license has been renewed. If yes
-		// we will load the renewed license.
-
-		buf := new(bytes.Buffer)
-		json.NewEncoder(buf).Encode(decoded)
-		res, err := http.Post(licenseEndpoint, "application/json", buf)
-		if err != nil {
-			return nil, err
-		}
-		defer res.Body.Close()
-
-		raw, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		decoded, err = license.Decode(raw, pub)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	license := new(core.License)
 	license.Expires = decoded.Exp
 	license.Licensor = decoded.Cus
 	license.Subscription = decoded.Sub
-	err = json.Unmarshal(decoded.Dat, license)
-	if err != nil {
-		return nil, err
-	}
-
-	if license.Users == 0 && decoded.Lim > 0 {
-		license.Users = int64(decoded.Lim)
-	}
-
+	license.Users = int64(decoded.Lim)
 	return license, err
 }

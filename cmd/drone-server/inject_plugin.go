@@ -61,10 +61,13 @@ func provideAdmissionPlugin(client *scm.Client, orgs core.OrganizationService, u
 // configuration.
 func provideConfigPlugin(client *scm.Client, contents core.FileService, conf spec.Config) core.ConfigService {
 	return config.Combine(
-		config.Global(
-			conf.Yaml.Endpoint,
-			conf.Yaml.Secret,
-			conf.Yaml.SkipVerify,
+		config.Memoize(
+			config.Global(
+				conf.Yaml.Endpoint,
+				conf.Yaml.Secret,
+				conf.Yaml.SkipVerify,
+				conf.Yaml.Timeout,
+			),
 		),
 		config.Repository(contents),
 	)
@@ -80,11 +83,14 @@ func provideConvertPlugin(client *scm.Client, conf spec.Config) core.ConvertServ
 		converter.Jsonnet(
 			conf.Jsonnet.Enabled,
 		),
-		converter.Remote(
-			conf.Convert.Endpoint,
-			conf.Convert.Secret,
-			conf.Convert.Extension,
-			conf.Convert.SkipVerify,
+		converter.Memoize(
+			converter.Remote(
+				conf.Convert.Endpoint,
+				conf.Convert.Secret,
+				conf.Convert.Extension,
+				conf.Convert.SkipVerify,
+				conf.Convert.Timeout,
+			),
 		),
 	)
 }
@@ -129,6 +135,13 @@ func provideValidatePlugin(conf spec.Config) core.ValidateService {
 			conf.Validate.Endpoint,
 			conf.Validate.Secret,
 			conf.Validate.SkipVerify,
+			conf.Validate.Timeout,
+		),
+		// THIS FEATURE IS INTERNAL USE ONLY AND SHOULD
+		// NOT BE USED OR RELIED UPON IN PRODUCTION.
+		validator.Filter(
+			nil,
+			conf.Repository.Ignore,
 		),
 	)
 }
